@@ -11,6 +11,7 @@
     <div class="container">
       <h1><a href="./">Mon Pokédex</a></h1>
       <nav id="main-nav"></nav>
+      <div id="header-search"></div>
       <div id="auth-block" class="auth-block"></div>
     </div>
   </header>
@@ -21,9 +22,11 @@
   <script src="./js/evolutions.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/nav.js"></script>
+  <script src="./js/search.js"></script>
   <script>
     renderNav('./pokedex.html');
     renderAuthBlock('auth-block');
+    renderHeaderSearch();
 
     const id = new URLSearchParams(location.search).get('id');
     const content = document.getElementById('detail-content');
@@ -95,10 +98,15 @@
             actions = '<p class="auth-message">Connecte-toi pour ajouter ce Pokémon aux favoris ou à une équipe.</p>';
           }
 
+          const normalImgUrl = pokemonImageUrl(p);
+          const shinyImgUrl = pokemonShinyImageUrl(p);
           content.innerHTML = `
             <p><a href="./pokedex.html">← Retour au Pokédex</a></p>
             <div class="detail-hero">
-              <img src="${pokemonImageUrl(p)}" alt="${p.name?.french}">
+              <div class="pokemon-image-wrap">
+                <img id="pokemon-main-img" src="${normalImgUrl}" alt="${p.name?.french}">
+                <button type="button" class="btn btn-outline btn-shiny" id="btn-shiny">Voir en Shiny</button>
+              </div>
               <div>
                 <h2 class="page-title">#${p.id} ${p.name?.french || p.name?.english}</h2>
                 <p>${p.name?.english ? p.name.english : ''} ${p.name?.japanese ? '・' + p.name.japanese : ''} ${p.name?.chinese ? '・' + p.name.chinese : ''}</p>
@@ -113,6 +121,29 @@
             </div>
             ${evolutionHtml}
           `;
+
+          const mainImg = document.getElementById('pokemon-main-img');
+          const btnShiny = document.getElementById('btn-shiny');
+          let isShiny = false;
+          if (mainImg && btnShiny) {
+            btnShiny.addEventListener('click', () => {
+              isShiny = !isShiny;
+              mainImg.classList.remove('pokemon-img-shiny');
+              if (isShiny) {
+                mainImg.src = shinyImgUrl;
+                btnShiny.textContent = 'Revenir au normal';
+                mainImg.onerror = () => {
+                  mainImg.src = normalImgUrl;
+                  mainImg.classList.add('pokemon-img-shiny');
+                  mainImg.onerror = null;
+                };
+              } else {
+                mainImg.src = normalImgUrl;
+                mainImg.onerror = null;
+                btnShiny.textContent = 'Voir en Shiny';
+              }
+            });
+          }
 
           const btnFav = document.getElementById('btn-fav');
           if (btnFav) {

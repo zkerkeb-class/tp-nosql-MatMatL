@@ -10,6 +10,7 @@ import authRouter from './routes/auth.js';
 import favoritesRouter from './routes/favorites.js';
 import statsRouter from './routes/stats.js';
 import teamsRouter from './routes/teams.js';
+import healthRouter from './routes/health.js';
 import connectDB from './db/connect.js';
 
 
@@ -23,6 +24,9 @@ app.use(express.json());
 
 // Front (dossier front/ servi à la racine)
 app.use(express.static('front'));
+
+// Santé (CI, hébergeur)
+app.use('/api/health', healthRouter);
 
 // Routes auth (Partie 5)
 app.use('/api/auth', authRouter);

@@ -11,6 +11,7 @@
     <div class="container">
       <h1><a href="./">Mon Pokédex</a></h1>
       <nav id="main-nav"></nav>
+      <div id="header-search"></div>
       <div id="auth-block" class="auth-block"></div>
     </div>
   </header>
@@ -71,11 +72,33 @@
   <script src="./js/api.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/nav.js"></script>
+  <script src="./js/search.js"></script>
   <script>
     renderNav('./pokedex.html');
     renderAuthBlock('auth-block');
+    renderHeaderSearch();
 
     let currentPage = 1;
+    let favoriteIds = new Set();
+
+    // Préremplir le filtre nom depuis l'URL ?name=...
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('name');
+      if (name) {
+        document.getElementById('filter-name').value = name;
+      }
+    })();
+
+    async function loadFavorites() {
+      if (!isLoggedIn()) return;
+      try {
+        const list = await apiGet('/api/favorites');
+        favoriteIds = new Set((list || []).map(p => p.id));
+      } catch (_) {
+        favoriteIds = new Set();
+      }
+    }
     const listEl = document.getElementById('pokedex-list');
     const paginationEl = document.getElementById('pagination');
 
@@ -91,6 +114,10 @@
 
     function renderCard(p) {
       const types = (p.type || []).map(t => `<span class="type-badge">${t}</span>`).join('');
+      const isFav = favoriteIds.has(p.id);
+      const star = isLoggedIn() ? `
+        <button type="button" class="star-fav ${isFav ? 'is-fav' : ''}" data-id="${p.id}" aria-label="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${isFav ? '★' : '☆'}</button>
+      ` : '';
       return `
         <div class="pokemon-card">
           <a href="./pokemon.html?id=${p.id}">
@@ -100,8 +127,34 @@
               <div class="card-types">${types}</div>
             </div>
           </a>
+          ${star}
         </div>
       `;
+    }
+
+    function updateStar(btn, isFav) {
+      if (!btn) return;
+      btn.classList.toggle('is-fav', isFav);
+      btn.textContent = isFav ? '★' : '☆';
+      btn.setAttribute('aria-label', isFav ? 'Retirer des favoris' : 'Ajouter aux favoris');
+    }
+
+    async function toggleFavorite(pokemonId) {
+      if (!isLoggedIn()) return;
+      const btn = listEl.querySelector('.star-fav[data-id="' + pokemonId + '"]');
+      try {
+        if (favoriteIds.has(pokemonId)) {
+          await apiDelete('/api/favorites/' + pokemonId);
+          favoriteIds.delete(pokemonId);
+          updateStar(btn, false);
+        } else {
+          await apiPost('/api/favorites/' + pokemonId, {});
+          favoriteIds.add(pokemonId);
+          updateStar(btn, true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     async function load() {
@@ -111,6 +164,13 @@
         const q = buildQuery(params);
         const data = await apiGet('/api/pokemons' + q);
         listEl.innerHTML = (data.data || []).map(renderCard).join('');
+        listEl.querySelectorAll('.star-fav').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(Number(btn.getAttribute('data-id')));
+          });
+        });
         const totalPages = data.totalPages || 1;
         paginationEl.innerHTML = `
           <button type="button" class="btn btn-small" ${currentPage <= 1 ? 'disabled' : ''} id="btn-prev">Précédent</button>
@@ -127,7 +187,10 @@
 
     document.getElementById('btn-apply').addEventListener('click', () => { currentPage = 1; load(); });
     document.getElementById('filter-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') { currentPage = 1; load(); } });
-    load();
+    (async () => {
+      await loadFavorites();
+      load();
+    })();
   </script>
 </body>
 </html>

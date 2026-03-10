@@ -25,6 +25,11 @@ nav { display: flex; gap: 1rem; flex-wrap: wrap; }
 nav a { padding: 0.4rem 0.8rem; border-radius: 8px; background: var(--accent); color: var(--text); }
 nav a:hover { background: var(--primary); text-decoration: none; }
 nav a.active { background: var(--primary); }
+.header-search-form { display: flex; gap: 0.5rem; align-items: center; }
+.header-search-form input { padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--accent); background: var(--bg); color: var(--text); width: 160px; }
+.star-fav { position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 0.2rem; line-height: 1; color: var(--text-muted); }
+.star-fav:hover { color: #fbbf24; }
+.star-fav.is-fav { color: #fbbf24; }
 
 .auth-block { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .auth-form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
@@ -40,7 +45,7 @@ nav a.active { background: var(--primary); }
 
 /* Cards */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
-.pokemon-card { background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: transform 0.2s; }
+.pokemon-card { position: relative; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: transform 0.2s; }
 .pokemon-card:hover { transform: translateY(-4px); }
 .pokemon-card a { color: inherit; text-decoration: none; display: block; }
 .pokemon-card img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--accent); }
@@ -73,6 +78,9 @@ nav a.active { background: var(--primary); }
 .evolution-chain .evo-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
 .evolution-chain .evo-name { font-weight: 600; }
 .evolution-chain .evolution-current { padding: 0.75rem; background: var(--accent); border-radius: var(--radius); font-weight: 600; }
+.pokemon-img-shiny { filter: hue-rotate(75deg) saturate(1.4) brightness(1.15) contrast(1.05); }
+.detail-hero .pokemon-image-wrap { position: relative; }
+.detail-hero .btn-shiny { margin-top: 0.5rem; }
 .stat-bar-wrap { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
 .stat-bar-wrap span:first-child { min-width: 100px; font-size: 0.9rem; }
 .stat-bar { flex: 1; max-width: 200px; height: 8px; background: var(--accent); border-radius: 4px; overflow: hidden; }

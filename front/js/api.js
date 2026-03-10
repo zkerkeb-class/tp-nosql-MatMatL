@@ -40,3 +40,8 @@ function pokemonImageUrl(pokemon) {
   if (pokemon?.id) return `${API_BASE}/assets/pokemons/${pokemon.id}.png`;
   return `${API_BASE}/assets/pokemons/0.png`;
 }
+
+function pokemonShinyImageUrl(pokemon) {
+  const id = pokemon?.id ?? 0;
+  return `${API_BASE}/assets/pokemons/shiny/${id}.png`;
+}
