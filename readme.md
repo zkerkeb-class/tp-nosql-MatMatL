@@ -4,7 +4,20 @@ API REST qui expose les **151 Pokémon** de la première génération, stockés 
 
 **Stack :** Node.js, Express 5, Mongoose 9, JWT, bcrypt.
 
-Un **front minimal** (HTML/CSS/JS) dans le dossier `front/` est servi à la racine : ouvre `http://localhost:3000` pour parcourir le Pokédex, gérer favoris et équipes, et consulter les stats.
+Un **front** (HTML/CSS/JS) dans le dossier `front/` est servi à la racine : ouvre `http://localhost:3000` pour parcourir le Pokédex, gérer favoris et équipes, et consulter les stats.
+
+
+
+Avancement : 
+
+Toutes les étapes sont réalisées dont 6A, 6B, 6C et 6D. 
+En bonus un front avancé est dispo (http://localhost:3000) afin d'intéragir avec l'API, ainsi qu'une route health pour connaître l'état du service.
+Des captures d'écrans sont disponnible dans front/screens_front.
+
+Mathieu Lienard
+
+
+
 
 ---
 
@@ -29,6 +42,14 @@ npm run dev    # Serveur sur http://localhost:3000
 | `MONGODB_URI` | URL de connexion MongoDB            |
 | `API_URL`   | URL de l’API (pour les images)       |
 | `JWT_SECRET`| Clé pour signer les tokens JWT       |
+
+---
+
+## Santé (health check)
+
+| Méthode | Route | Auth | Description |
+|--------|--------|------|-------------|
+| **GET** | `/api/health` | Non | Retourne `{ "ok": true, "mongo": true }` si l’API et MongoDB sont opérationnels, `mongo: false` si la base est déconnectée. Utile pour la CI, les hébergeurs ou un load balancer. |
 
 ---
 
