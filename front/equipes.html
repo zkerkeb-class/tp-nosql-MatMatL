@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mes équipes — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title">Mes équipes</h2>
+    <p><a href="./equipe-edit.html" class="btn">Créer une équipe</a></p>
+    <div id="equipes-list"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./equipes.html');
+    renderAuthBlock('auth-block');
+
+    const listEl = document.getElementById('equipes-list');
+    requireAuth(() => {
+      listEl.innerHTML = '<p class="loading">Chargement…</p>';
+      apiGet('/api/teams')
+        .then((teams) => {
+          if (!teams || teams.length === 0) {
+            listEl.innerHTML = '<p class="team-empty">Aucune équipe. <a href="./equipe-edit.html">Crée ta première équipe</a> !</p>';
+            return;
+          }
+          listEl.innerHTML = teams.map((t) => {
+            const preview = (t.pokemons || []).slice(0, 6).map((p) => {
+              const img = p && (p.image || (p.id ? `/assets/pokemons/${p.id}.png` : ''));
+              return `<img src="${img}" alt="">`;
+            }).join('');
+            return `
+              <div class="team-card">
+                <div>
+                  <strong>${escapeHtml(t.name)}</strong>
+                  <div class="team-preview">${preview || '—'}</div>
+                </div>
+                <div>
+                  <a href="./equipe.html?id=${t._id}" class="btn btn-small">Voir</a>
+                  <a href="./equipe-edit.html?id=${t._id}" class="btn btn-small btn-outline">Modifier</a>
+                  <button type="button" class="btn btn-small btn-outline btn-delete" data-id="${t._id}">Supprimer</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+          listEl.querySelectorAll('.btn-delete').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              if (!confirm('Supprimer cette équipe ?')) return;
+              try {
+                await apiDelete(`/api/teams/${btn.dataset.id}`);
+                btn.closest('.team-card').remove();
+              } catch (e) { alert(e.error || 'Erreur'); }
+            });
+          });
+        })
+        .catch((e) => {
+          listEl.innerHTML = `<p class="error-msg">${e.error || 'Erreur'}</p>`;
+        });
+    });
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

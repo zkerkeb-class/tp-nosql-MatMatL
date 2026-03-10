@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokédex — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title">Pokédex</h2>
+    <div class="filters">
+      <label>
+        Type
+        <select id="filter-type">
+          <option value="">Tous</option>
+          <option value="Normal">Normal</option>
+          <option value="Fire">Fire</option>
+          <option value="Water">Water</option>
+          <option value="Electric">Electric</option>
+          <option value="Grass">Grass</option>
+          <option value="Ice">Ice</option>
+          <option value="Fighting">Fighting</option>
+          <option value="Poison">Poison</option>
+          <option value="Ground">Ground</option>
+          <option value="Flying">Flying</option>
+          <option value="Psychic">Psychic</option>
+          <option value="Bug">Bug</option>
+          <option value="Rock">Rock</option>
+          <option value="Ghost">Ghost</option>
+          <option value="Dragon">Dragon</option>
+          <option value="Dark">Dark</option>
+          <option value="Steel">Steel</option>
+          <option value="Fairy">Fairy</option>
+        </select>
+      </label>
+      <label>
+        Nom
+        <input type="text" id="filter-name" placeholder="Rechercher…">
+      </label>
+      <label>
+        Tri
+        <select id="filter-sort">
+          <option value="">Par défaut</option>
+          <option value="name.french">Nom A-Z</option>
+          <option value="-name.french">Nom Z-A</option>
+          <option value="-base.HP">HP décroissant</option>
+          <option value="-base.Attack">Attaque décroissante</option>
+        </select>
+      </label>
+      <label>
+        Par page
+        <select id="filter-limit">
+          <option value="20">20</option>
+          <option value="50" selected>50</option>
+          <option value="151">151</option>
+        </select>
+      </label>
+      <button type="button" class="btn" id="btn-apply">Appliquer</button>
+    </div>
+    <div id="pokedex-list" class="card-grid"></div>
+    <div id="pagination" class="pagination"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./pokedex.html');
+    renderAuthBlock('auth-block');
+
+    let currentPage = 1;
+    const listEl = document.getElementById('pokedex-list');
+    const paginationEl = document.getElementById('pagination');
+
+    function getParams() {
+      return {
+        type: document.getElementById('filter-type').value || undefined,
+        name: document.getElementById('filter-name').value.trim() || undefined,
+        sort: document.getElementById('filter-sort').value || undefined,
+        page: currentPage,
+        limit: document.getElementById('filter-limit').value || 50,
+      };
+    }
+
+    function renderCard(p) {
+      const types = (p.type || []).map(t => `<span class="type-badge">${t}</span>`).join('');
+      return `
+        <div class="pokemon-card">
+          <a href="./pokemon.html?id=${p.id}">
+            <img src="${pokemonImageUrl(p)}" alt="${p.name?.french || p.id}" loading="lazy">
+            <div class="card-body">
+              <h3 class="card-title">#${p.id} ${p.name?.french || p.name?.english || '?'}</h3>
+              <div class="card-types">${types}</div>
+            </div>
+          </a>
+        </div>
+      `;
+    }
+
+    async function load() {
+      listEl.innerHTML = '<p class="loading">Chargement…</p>';
+      try {
+        const params = getParams();
+        const q = buildQuery(params);
+        const data = await apiGet('/api/pokemons' + q);
+        listEl.innerHTML = (data.data || []).map(renderCard).join('');
+        const totalPages = data.totalPages || 1;
+        paginationEl.innerHTML = `
+          <button type="button" class="btn btn-small" ${currentPage <= 1 ? 'disabled' : ''} id="btn-prev">Précédent</button>
+          <span>Page ${currentPage} / ${totalPages}</span>
+          <button type="button" class="btn btn-small" ${currentPage >= totalPages ? 'disabled' : ''} id="btn-next">Suivant</button>
+        `;
+        document.getElementById('btn-prev')?.addEventListener('click', () => { currentPage--; load(); });
+        document.getElementById('btn-next')?.addEventListener('click', () => { currentPage++; load(); });
+      } catch (e) {
+        listEl.innerHTML = `<p class="error-msg">${e.error || 'Erreur de chargement'}</p>`;
+        paginationEl.innerHTML = '';
+      }
+    }
+
+    document.getElementById('btn-apply').addEventListener('click', () => { currentPage = 1; load(); });
+    document.getElementById('filter-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') { currentPage = 1; load(); } });
+    load();
+  </script>
+</body>
+</html>

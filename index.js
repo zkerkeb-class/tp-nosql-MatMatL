@@ -21,6 +21,9 @@ app.use('/assets', express.static('assets')); // Permet d'accéder aux fichiers 
 
 app.use(express.json());
 
+// Front (dossier front/ servi à la racine)
+app.use(express.static('front'));
+
 // Routes auth (Partie 5)
 app.use('/api/auth', authRouter);
 
@@ -35,11 +38,6 @@ app.use('/api/stats', statsRouter);
 
 // Équipes (Partie 6.D) — authentification requise
 app.use('/api/teams', teamsRouter);
-
-
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
-});
 
 const PORT = process.env.PORT || 3000;
 

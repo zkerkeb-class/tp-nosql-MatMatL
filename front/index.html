@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon Pokédex — Accueil</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title">Bienvenue</h2>
+    <p>Explore les 151 Pokémon de la première génération, ajoute des favoris, crée des équipes et consulte les statistiques.</p>
+    <div class="card-grid" style="margin-top: 2rem;">
+      <a href="./pokedex.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
+        <strong>Pokédex</strong>
+        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Liste, filtres, recherche</p>
+      </a>
+      <a href="./favoris.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
+        <strong>Favoris</strong>
+        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Tes Pokémon préférés</p>
+      </a>
+      <a href="./equipes.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
+        <strong>Équipes</strong>
+        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Crée des équipes de 6</p>
+      </a>
+      <a href="./stats.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
+        <strong>Statistiques</strong>
+        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Records et moyennes</p>
+      </a>
+    </div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>renderNav('./'); renderAuthBlock('auth-block');</script>
+</body>
+</html>

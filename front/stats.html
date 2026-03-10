@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Statistiques — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title">Statistiques</h2>
+    <div id="stats-content"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./stats.html');
+    renderAuthBlock('auth-block');
+
+    const content = document.getElementById('stats-content');
+    content.innerHTML = '<p class="loading">Chargement…</p>';
+    apiGet('/api/stats')
+      .then((data) => {
+        const countByType = data.countByType || [];
+        const avgHpByType = data.avgHpByType || [];
+        const maxAttack = data.maxAttack;
+        const maxHp = data.maxHp;
+
+        let html = '<div class="stats-grid">';
+
+        html += `
+          <div class="stats-box">
+            <h3>Nombre par type</h3>
+            <ul class="stats-list">
+              ${countByType.map((x) => `<li><span>${x.type}</span><strong>${x.count}</strong></li>`).join('')}
+            </ul>
+          </div>
+          <div class="stats-box">
+            <h3>Moyenne des HP par type</h3>
+            <ul class="stats-list">
+              ${avgHpByType.map((x) => `<li><span>${x.type}</span><strong>${x.avgHp}</strong></li>`).join('')}
+            </ul>
+          </div>
+        `;
+
+        if (maxAttack) {
+          html += `
+            <div class="stats-box">
+              <h3>Plus forte attaque</h3>
+              <div class="stats-record">
+                <img src="${pokemonImageUrl(maxAttack)}" alt="">
+                <div>
+                  <strong>#${maxAttack.id} ${maxAttack.name?.french || maxAttack.name?.english}</strong>
+                  <p>Attaque : ${maxAttack.base?.Attack ?? '—'}</p>
+                  <a href="./pokemon.html?id=${maxAttack.id}" class="btn btn-small">Voir</a>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        if (maxHp) {
+          html += `
+            <div class="stats-box">
+              <h3>Plus de HP</h3>
+              <div class="stats-record">
+                <img src="${pokemonImageUrl(maxHp)}" alt="">
+                <div>
+                  <strong>#${maxHp.id} ${maxHp.name?.french || maxHp.name?.english}</strong>
+                  <p>HP : ${maxHp.base?.HP ?? '—'}</p>
+                  <a href="./pokemon.html?id=${maxHp.id}" class="btn btn-small">Voir</a>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        html += '</div>';
+        content.innerHTML = html;
+      })
+      .catch((e) => {
+        content.innerHTML = `<p class="error-msg">${e.error || 'Erreur de chargement'}</p>`;
+      });
+  </script>
+</body>
+</html>

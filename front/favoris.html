@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Favoris — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title">Mes favoris</h2>
+    <div id="favoris-content"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./favoris.html');
+    renderAuthBlock('auth-block');
+
+    const content = document.getElementById('favoris-content');
+    requireAuth(() => {
+      content.innerHTML = '<p class="loading">Chargement…</p>';
+      apiGet('/api/favorites')
+        .then((list) => {
+          if (!list || list.length === 0) {
+            content.innerHTML = '<p class="team-empty">Aucun favori. Parcours le <a href="./pokedex.html">Pokédex</a> et ajoute des Pokémon !</p>';
+            return;
+          }
+          content.innerHTML = '<div class="card-grid" id="favoris-grid"></div>';
+          const grid = document.getElementById('favoris-grid');
+          list.forEach((p) => {
+            const types = (p.type || []).map(t => `<span class="type-badge">${t}</span>`).join('');
+            const div = document.createElement('div');
+            div.className = 'pokemon-card';
+            div.innerHTML = `
+              <a href="./pokemon.html?id=${p.id}">
+                <img src="${pokemonImageUrl(p)}" alt="${p.name?.french}" loading="lazy">
+                <div class="card-body">
+                  <h3 class="card-title">#${p.id} ${p.name?.french || p.name?.english}</h3>
+                  <div class="card-types">${types}</div>
+                </div>
+              </a>
+              <div class="card-body"><button type="button" class="btn btn-small btn-outline remove-fav" data-id="${p.id}">Retirer</button></div>
+            `;
+            div.querySelector('.remove-fav').addEventListener('click', async (e) => {
+              e.preventDefault();
+              try {
+                await apiDelete(`/api/favorites/${p.id}`);
+                div.remove();
+                if (grid.children.length === 0) content.innerHTML = '<p class="team-empty">Aucun favori.</p>';
+              } catch (err) { alert(err.error || 'Erreur'); }
+            });
+            grid.appendChild(div);
+          });
+        })
+        .catch((e) => {
+          content.innerHTML = `<p class="error-msg">${e.error || 'Erreur'}</p>`;
+        });
+    });
+  </script>
+</body>
+</html>

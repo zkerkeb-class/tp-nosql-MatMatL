@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Créer / Modifier équipe — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <h2 class="page-title" id="form-title">Créer une équipe</h2>
+    <form id="form-equipe">
+      <div class="form-group">
+        <label>Nom de l'équipe</label>
+        <input type="text" id="team-name" required placeholder="Ex: Team Kanto">
+      </div>
+      <div class="form-group">
+        <label>Pokémon (max 6)</label>
+        <div class="pick-grid" id="slots"></div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Recherche pour ajouter :</p>
+        <input type="text" id="search-pokemon" placeholder="Nom d'un Pokémon…" style="margin-top: 0.5rem;">
+        <div id="search-results" class="card-grid" style="margin-top: 0.75rem;"></div>
+      </div>
+      <button type="submit" class="btn">Enregistrer</button>
+      <a href="./equipes.html" class="btn btn-outline">Annuler</a>
+    </form>
+    <p id="form-error" class="error-msg"></p>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./equipes.html');
+    renderAuthBlock('auth-block');
+
+    const teamId = new URLSearchParams(location.search).get('id');
+    const addId = new URLSearchParams(location.search).get('add');
+    const isEdit = !!teamId;
+    const slotsEl = document.getElementById('slots');
+    const searchInput = document.getElementById('search-pokemon');
+    const searchResults = document.getElementById('search-results');
+    const form = document.getElementById('form-equipe');
+    const formError = document.getElementById('form-error');
+    const formTitle = document.getElementById('form-title');
+
+    let selected = [];
+    const MAX = 6;
+
+    function renderSlots() {
+      const slots = [];
+      for (let i = 0; i < MAX; i++) {
+        const p = selected[i];
+        if (p) {
+          slots.push(`
+            <div class="pick-slot filled" data-index="${i}">
+              <img src="${pokemonImageUrl(p)}" alt="">
+              <span>#${p.id} ${p.name?.french || p.name?.english}</span>
+              <button type="button" class="remove-pick btn btn-small btn-outline">Retirer</button>
+            </div>
+          `);
+        } else {
+          slots.push(`<div class="pick-slot" data-index="${i}">Emplacement ${i + 1}</div>`);
+        }
+      }
+      slotsEl.innerHTML = slots.join('');
+      slotsEl.querySelectorAll('.remove-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.closest('.pick-slot').dataset.index, 10);
+          selected[idx] = null;
+          renderSlots();
+        });
+      });
+    }
+
+    function addPokemon(p) {
+      if (selected.some((x) => x && x.id === p.id)) return;
+      const firstFree = selected.findIndex((x) => !x);
+      if (firstFree === -1) return;
+      selected[firstFree] = p;
+      renderSlots();
+      searchResults.innerHTML = '';
+      searchInput.value = '';
+    }
+
+    searchInput.addEventListener('input', async () => {
+      const q = searchInput.value.trim();
+      if (q.length < 2) { searchResults.innerHTML = ''; return; }
+      try {
+        const data = await apiGet('/api/pokemons' + buildQuery({ name: q, limit: 12 }));
+        const list = data.data || [];
+        searchResults.innerHTML = list.map((p) => {
+          const types = (p.type || []).map(t => `<span class="type-badge">${t}</span>`).join('');
+          return `
+            <div class="pokemon-card">
+              <a href="./pokemon.html?id=${p.id}">
+                <img src="${pokemonImageUrl(p)}" alt="">
+                <div class="card-body">
+                  <h3 class="card-title">#${p.id} ${p.name?.french}</h3>
+                  <div class="card-types">${types}</div>
+                </div>
+              </a>
+              <div class="card-body">
+                <button type="button" class="btn btn-small add-pick" data-id="${p.id}">Ajouter</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        searchResults.querySelectorAll('.add-pick').forEach((btn) => {
+          const pid = parseInt(btn.dataset.id, 10);
+          const pokemon = list.find((x) => x.id === pid);
+          if (pokemon) btn.addEventListener('click', (e) => { e.preventDefault(); addPokemon(pokemon); });
+        });
+      } catch (_) { searchResults.innerHTML = ''; }
+    });
+
+    requireAuth(() => {
+      if (isEdit) {
+        formTitle.textContent = 'Modifier l\'équipe';
+        apiGet(`/api/teams/${teamId}`).then((t) => {
+          document.getElementById('team-name').value = t.name || '';
+          selected = (t.pokemons || []).slice(0, MAX);
+          for (let i = selected.length; i < MAX; i++) selected.push(null);
+          renderSlots();
+        }).catch(() => {});
+      } else {
+        selected = Array(MAX).fill(null);
+        if (addId) {
+          apiGet('/api/pokemons/' + addId).then((p) => { addPokemon(p); }).catch(() => {});
+        }
+        renderSlots();
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+      const name = document.getElementById('team-name').value.trim();
+      const ids = selected.filter(Boolean).map((p) => p.id);
+      if (!name) { formError.textContent = 'Nom requis.'; return; }
+      if (ids.length > MAX) { formError.textContent = 'Maximum 6 Pokémon.'; return; }
+      try {
+        if (isEdit) {
+          await apiPut(`/api/teams/${teamId}`, { name, pokemons: ids });
+          location.href = './equipe.html?id=' + teamId;
+        } else {
+          const created = await apiPost('/api/teams', { name, pokemons: ids });
+          location.href = './equipe.html?id=' + created._id;
+        }
+      } catch (err) {
+        formError.textContent = err.error || 'Erreur';
+      }
+    });
+
+    renderSlots();
+  </script>
+</body>
+</html>

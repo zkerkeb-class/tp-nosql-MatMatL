@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Détail Pokémon — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <div id="detail-content"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/evolutions.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./pokedex.html');
+    renderAuthBlock('auth-block');
+
+    const id = new URLSearchParams(location.search).get('id');
+    const content = document.getElementById('detail-content');
+
+    if (!id) {
+      content.innerHTML = '<p class="error-msg">ID Pokémon manquant.</p><a href="./pokedex.html">Retour au Pokédex</a>';
+    } else {
+      content.innerHTML = '<p class="loading">Chargement…</p>';
+      apiGet('/api/pokemons/' + id)
+        .then(async (p) => {
+          const types = (p.type || []).map(t => `<span class="type-badge">${t}</span>`).join('');
+          const base = p.base || {};
+          const statKeys = ['HP', 'Attack', 'Defense', 'SpecialAttack', 'SpecialDefense', 'Speed'];
+          const statsWithValues = statKeys.filter(k => base[k] != null);
+          const totalBase = statsWithValues.reduce((sum, k) => sum + (base[k] || 0), 0);
+          const topStats = statsWithValues
+            .map(k => ({ name: k, value: base[k] }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 2);
+          const strengthsText = topStats.length ? 'Points forts : ' + topStats.map(s => s.name + ' (' + s.value + ')').join(', ') : '';
+
+          const statsRows = statsWithValues
+            .map(k => {
+              const val = base[k];
+              const pct = Math.min(100, Math.round((val / 255) * 100));
+              return `<tr><td>${k}</td><td>${val}</td><td><div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%"></div></div></td></tr>`;
+            })
+            .join('');
+
+          const evo = getEvolutionChain(p.id);
+          const chainIds = evo.chain || [];
+          const idsToFetch = chainIds.filter((id) => parseInt(id, 10) !== parseInt(p.id, 10));
+          const chainMap = { [p.id]: p };
+          try {
+            const results = await Promise.all(idsToFetch.map((id) => apiGet('/api/pokemons/' + id)));
+            results.forEach((pokemon) => { chainMap[pokemon.id] = pokemon; });
+          } catch (_) {}
+
+          let evolutionHtml = '';
+          if (chainIds.length > 0) {
+            evolutionHtml = '<div class="detail-section"><h3>Chaîne d\'évolution</h3><div class="evolution-chain">';
+            chainIds.forEach((chainId, i) => {
+              const poke = chainMap[chainId];
+              if (i > 0) evolutionHtml += '<span style="color: var(--text-muted);">→</span>';
+              if (!poke) {
+                evolutionHtml += `<span style="padding: 0.75rem; color: var(--text-muted);">#${chainId} ?</span>`;
+                return;
+              }
+              const isCurrent = parseInt(poke.id, 10) === parseInt(p.id, 10);
+              if (isCurrent) {
+                evolutionHtml += `<span class="evolution-current">#${poke.id} ${poke.name?.french || poke.name?.english} (actuel)</span>`;
+              } else {
+                const label = i === 0 ? '1ère forme' : i === chainIds.length - 1 ? 'Évolution finale' : 'Évolution';
+                evolutionHtml += `<a href="./pokemon.html?id=${poke.id}"><span class="evo-label">${label}</span><img src="${pokemonImageUrl(poke)}" alt=""><span class="evo-name">#${poke.id} ${poke.name?.french || poke.name?.english}</span></a>`;
+              }
+            });
+            evolutionHtml += '</div></div>';
+          }
+
+          let actions = '';
+          if (isLoggedIn()) {
+            actions = `
+              <div class="detail-actions">
+                <button type="button" class="btn" id="btn-fav">Ajouter aux favoris</button>
+                <a href="./equipe-edit.html?add=${p.id}" class="btn btn-outline">Ajouter à une équipe</a>
+              </div>
+            `;
+          } else {
+            actions = '<p class="auth-message">Connecte-toi pour ajouter ce Pokémon aux favoris ou à une équipe.</p>';
+          }
+
+          content.innerHTML = `
+            <p><a href="./pokedex.html">← Retour au Pokédex</a></p>
+            <div class="detail-hero">
+              <img src="${pokemonImageUrl(p)}" alt="${p.name?.french}">
+              <div>
+                <h2 class="page-title">#${p.id} ${p.name?.french || p.name?.english}</h2>
+                <p>${p.name?.english ? p.name.english : ''} ${p.name?.japanese ? '・' + p.name.japanese : ''} ${p.name?.chinese ? '・' + p.name.chinese : ''}</p>
+                <div class="card-types" style="margin: 0.5rem 0;">${types}</div>
+                <div class="detail-stats">
+                  <table><tbody>${statsRows}</tbody></table>
+                  <p class="detail-total-stats">Total des stats de base : ${totalBase}</p>
+                  ${strengthsText ? '<p class="detail-strengths">' + strengthsText + '</p>' : ''}
+                </div>
+                ${actions}
+              </div>
+            </div>
+            ${evolutionHtml}
+          `;
+
+          const btnFav = document.getElementById('btn-fav');
+          if (btnFav) {
+            let isFav = false;
+            try {
+              const favs = await apiGet('/api/favorites');
+              isFav = (favs || []).some(f => f.id === p.id);
+            } catch (_) {}
+            btnFav.textContent = isFav ? 'Retirer des favoris' : 'Ajouter aux favoris';
+            btnFav.addEventListener('click', async () => {
+              try {
+                if (isFav) await apiDelete(`/api/favorites/${p.id}`);
+                else await apiPost(`/api/favorites/${p.id}`);
+                isFav = !isFav;
+                btnFav.textContent = isFav ? 'Retirer des favoris' : 'Ajouter aux favoris';
+              } catch (e) {
+                alert(e.error || 'Erreur');
+              }
+            });
+          }
+        })
+        .catch((e) => {
+          content.innerHTML = `<p class="error-msg">${e.error || 'Pokémon non trouvé.'}</p><a href="./pokedex.html">Retour au Pokédex</a>`;
+        });
+    }
+  </script>
+</body>
+</html>

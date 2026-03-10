@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Équipe — Mon Pokédex</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="./">Mon Pokédex</a></h1>
+      <nav id="main-nav"></nav>
+      <div id="auth-block" class="auth-block"></div>
+    </div>
+  </header>
+  <main class="container">
+    <div id="equipe-content"></div>
+  </main>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/nav.js"></script>
+  <script>
+    renderNav('./equipes.html');
+    renderAuthBlock('auth-block');
+
+    const id = new URLSearchParams(location.search).get('id');
+    const content = document.getElementById('equipe-content');
+    if (!id) {
+      content.innerHTML = '<p class="error-msg">ID équipe manquant.</p><a href="./equipes.html">Retour</a>';
+    } else {
+      requireAuth(() => {
+        content.innerHTML = '<p class="loading">Chargement…</p>';
+        apiGet(`/api/teams/${id}`)
+          .then((t) => {
+            const pokemons = t.pokemons || [];
+            const cards = pokemons.map((p) => {
+              const types = (p.type || []).map(ty => `<span class="type-badge">${ty}</span>`).join('');
+              return `
+                <div class="pokemon-card">
+                  <a href="./pokemon.html?id=${p.id}">
+                    <img src="${pokemonImageUrl(p)}" alt="${p.name?.french}">
+                    <div class="card-body">
+                      <h3 class="card-title">#${p.id} ${p.name?.french || p.name?.english}</h3>
+                      <div class="card-types">${types}</div>
+                    </div>
+                  </a>
+                </div>
+              `;
+            }).join('');
+            content.innerHTML = `
+              <p><a href="./equipes.html">← Retour aux équipes</a></p>
+              <h2 class="page-title">${escapeHtml(t.name)}</h2>
+              <div class="detail-actions" style="margin-bottom: 1rem;">
+                <a href="./equipe-edit.html?id=${t._id}" class="btn">Modifier</a>
+                <button type="button" class="btn btn-outline" id="btn-delete">Supprimer l'équipe</button>
+              </div>
+              <div class="card-grid">${cards || '<p class="team-empty">Aucun Pokémon dans cette équipe.</p>'}</div>
+            `;
+            document.getElementById('btn-delete').addEventListener('click', async () => {
+              if (!confirm('Supprimer cette équipe ?')) return;
+              try {
+                await apiDelete(`/api/teams/${t._id}`);
+                location.href = './equipes.html';
+              } catch (e) { alert(e.error || 'Erreur'); }
+            });
+          })
+          .catch((e) => {
+            content.innerHTML = `<p class="error-msg">${e.error || 'Équipe non trouvée.'}</p><a href="./equipes.html">Retour</a>`;
+          });
+      });
+    }
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  </script>
+</body>
+</html>
