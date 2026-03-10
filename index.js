@@ -9,6 +9,7 @@ import pokemonsRouter from './routes/pokemons.js';
 import authRouter from './routes/auth.js';
 import favoritesRouter from './routes/favorites.js';
 import statsRouter from './routes/stats.js';
+import teamsRouter from './routes/teams.js';
 import connectDB from './db/connect.js';
 
 
@@ -31,6 +32,9 @@ app.use('/api/favorites', favoritesRouter);
 
 // Statistiques (Partie 6.B)
 app.use('/api/stats', statsRouter);
+
+// Équipes (Partie 6.D) — authentification requise
+app.use('/api/teams', teamsRouter);
 
 
 app.get('/', (req, res) => {
