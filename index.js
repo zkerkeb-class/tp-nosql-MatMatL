@@ -5,6 +5,13 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
+import pokemonsRouter from './routes/pokemons.js';
+import authRouter from './routes/auth.js';
+import favoritesRouter from './routes/favorites.js';
+import statsRouter from './routes/stats.js';
+import teamsRouter from './routes/teams.js';
+import healthRouter from './routes/health.js';
+import connectDB from './db/connect.js';
 
 
 const app = express();
@@ -15,13 +22,39 @@ app.use('/assets', express.static('assets')); // Permet d'accéder aux fichiers 
 
 app.use(express.json());
 
+// Front (dossier front/ servi à la racine)
+app.use(express.static('front'));
 
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
+// Santé (CI, hébergeur)
+app.use('/api/health', healthRouter);
 
+// Routes auth (Partie 5)
+app.use('/api/auth', authRouter);
 
+// Routes Pokémon
+app.use('/api/pokemons', pokemonsRouter);
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server is running on http://localhost:${process.env.PORT || 3000}`);
-});
+// Favoris (Partie 6.A) — authentification requise
+app.use('/api/favorites', favoritesRouter);
+
+// Statistiques (Partie 6.B)
+app.use('/api/stats', statsRouter);
+
+// Équipes (Partie 6.D) — authentification requise
+app.use('/api/teams', teamsRouter);
+
+const PORT = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Impossible de démarrer le serveur :', error.message);
+    process.exit(1);
+  }
+};
+
+start();
