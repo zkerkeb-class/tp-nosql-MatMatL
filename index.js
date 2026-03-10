@@ -7,6 +7,8 @@ import cors from 'cors';
 
 import pokemonsRouter from './routes/pokemons.js';
 import authRouter from './routes/auth.js';
+import favoritesRouter from './routes/favorites.js';
+import statsRouter from './routes/stats.js';
 import connectDB from './db/connect.js';
 
 
@@ -23,6 +25,12 @@ app.use('/api/auth', authRouter);
 
 // Routes Pokémon
 app.use('/api/pokemons', pokemonsRouter);
+
+// Favoris (Partie 6.A) — authentification requise
+app.use('/api/favorites', favoritesRouter);
+
+// Statistiques (Partie 6.B)
+app.use('/api/stats', statsRouter);
 
 
 app.get('/', (req, res) => {
