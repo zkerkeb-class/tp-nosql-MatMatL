@@ -19,8 +19,16 @@ router.get('/', async (req, res) => {
       filter.type = type;
     }
 
-    if (name) {
-      filter['name.english'] = { $regex: name, $options: 'i' };
+    if (name && name.trim()) {
+      // Recherche permissive : insensible à la casse, partielle, dans tous les noms
+      const escaped = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { 'name.french': regex },
+        { 'name.english': regex },
+        { 'name.japanese': regex },
+        { 'name.chinese': regex },
+      ].filter((_, i, arr) => arr[i]); // garde toutes les clés (champs optionnels OK)
     }
 
     let query = Pokemon.find(filter);

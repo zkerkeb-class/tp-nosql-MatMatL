@@ -15,32 +15,180 @@
       <div id="auth-block" class="auth-block"></div>
     </div>
   </header>
-  <main class="container">
-    <h2 class="page-title">Bienvenue</h2>
-    <p>Explore les 151 Pokémon de la première génération, ajoute des favoris, crée des équipes et consulte les statistiques.</p>
-    <div class="card-grid" style="margin-top: 2rem;">
-      <a href="./pokedex.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
-        <strong>Pokédex</strong>
-        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Liste, filtres, recherche</p>
-      </a>
-      <a href="./favoris.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
-        <strong>Favoris</strong>
-        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Tes Pokémon préférés</p>
-      </a>
-      <a href="./equipes.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
-        <strong>Équipes</strong>
-        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Crée des équipes de 6</p>
-      </a>
-      <a href="./stats.html" class="pokemon-card" style="text-align: center; padding: 1.5rem;">
-        <strong>Statistiques</strong>
-        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-muted);">Records et moyennes</p>
-      </a>
-    </div>
+  <main class="container dashboard">
+    <section class="dashboard-hero">
+      <h2 class="dashboard-title">Dashboard</h2>
+      <p class="dashboard-subtitle">Génération 1 — Vue d’ensemble de ton Pokédex</p>
+    </section>
+
+    <section class="dashboard-kpis" id="dashboard-kpis">
+      <div class="kpi-card kpi-loading">Chargement…</div>
+    </section>
+
+    <section class="dashboard-grid">
+      <div class="dashboard-section dashboard-records" id="dashboard-records">
+        <h3 class="dashboard-section-title">Records</h3>
+        <div id="dashboard-records-content" class="loading">Chargement…</div>
+      </div>
+      <div class="dashboard-section dashboard-types" id="dashboard-types">
+        <h3 class="dashboard-section-title">Répartition par type</h3>
+        <div id="dashboard-types-content" class="loading">Chargement…</div>
+      </div>
+    </section>
+
+    <section class="dashboard-actions">
+      <h3 class="dashboard-section-title">Accès rapide</h3>
+      <div class="dashboard-action-grid">
+        <a href="./pokedex.html" class="dashboard-action-card">
+          <span class="dashboard-action-icon">📖</span>
+          <strong>Pokédex</strong>
+          <span>Liste, filtres et recherche</span>
+        </a>
+        <a href="./favoris.html" class="dashboard-action-card">
+          <span class="dashboard-action-icon">⭐</span>
+          <strong>Favoris</strong>
+          <span id="dashboard-favoris-desc">Tes Pokémon préférés</span>
+        </a>
+        <a href="./equipes.html" class="dashboard-action-card">
+          <span class="dashboard-action-icon">👥</span>
+          <strong>Équipes</strong>
+          <span id="dashboard-equipes-desc">Crée des équipes de 6</span>
+        </a>
+        <a href="./stats.html" class="dashboard-action-card">
+          <span class="dashboard-action-icon">📊</span>
+          <strong>Statistiques</strong>
+          <span>Records et moyennes</span>
+        </a>
+      </div>
+    </section>
   </main>
   <script src="./js/api.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/nav.js"></script>
   <script src="./js/search.js"></script>
-  <script>renderNav('./'); renderAuthBlock('auth-block'); renderHeaderSearch();</script>
+  <script>
+    renderNav('./');
+    renderAuthBlock('auth-block');
+    renderHeaderSearch();
+
+    const kpisEl = document.getElementById('dashboard-kpis');
+    const recordsEl = document.getElementById('dashboard-records-content');
+    const typesEl = document.getElementById('dashboard-types-content');
+    const favorisDescEl = document.getElementById('dashboard-favoris-desc');
+    const equipesDescEl = document.getElementById('dashboard-equipes-desc');
+
+    async function loadDashboard() {
+      try {
+        const [stats, favoritesData, teamsData] = await Promise.all([
+          apiGet('/api/stats'),
+          isLoggedIn() ? apiGet('/api/favorites').catch(() => []) : [],
+          isLoggedIn() ? apiGet('/api/teams').catch(() => []) : [],
+        ]);
+
+        const total = stats?.total ?? 0;
+        const countByType = stats?.countByType || [];
+        const maxAttack = stats?.maxAttack || null;
+        const maxHp = stats?.maxHp || null;
+        const favoritesCount = Array.isArray(favoritesData) ? favoritesData.length : 0;
+        const teamsCount = Array.isArray(teamsData) ? teamsData.length : 0;
+
+        // KPIs
+        kpisEl.innerHTML = `
+          <div class="kpi-card">
+            <span class="kpi-value">${total}</span>
+            <span class="kpi-label">Pokémon</span>
+          </div>
+          ${isLoggedIn() ? `
+          <div class="kpi-card kpi-card-link" onclick="location.href='./favoris.html'">
+            <span class="kpi-value">${favoritesCount}</span>
+            <span class="kpi-label">Favoris</span>
+          </div>
+          <div class="kpi-card kpi-card-link" onclick="location.href='./equipes.html'">
+            <span class="kpi-value">${teamsCount}</span>
+            <span class="kpi-label">Équipes</span>
+          </div>
+          ` : ''}
+          <div class="kpi-card">
+            <span class="kpi-value">${countByType.length}</span>
+            <span class="kpi-label">Types</span>
+          </div>
+        `;
+
+        // Descriptions personnalisées si connecté
+        if (isLoggedIn()) {
+          if (favorisDescEl) favorisDescEl.textContent = favoritesCount ? favoritesCount + ' favori' + (favoritesCount > 1 ? 's' : '') : 'Tes Pokémon préférés';
+          if (equipesDescEl) equipesDescEl.textContent = teamsCount ? teamsCount + ' équipe' + (teamsCount > 1 ? 's' : '') : 'Crée des équipes de 6';
+        }
+
+        // Records
+        let recordsHtml = '';
+        if (maxAttack) {
+          const name = maxAttack.name?.french || maxAttack.name?.english || maxAttack.id;
+          recordsHtml += `
+            <a href="./pokemon.html?id=${maxAttack.id}" class="dashboard-record-card">
+              <img src="${pokemonImageUrl(maxAttack)}" alt="${name}">
+              <div>
+                <span class="dashboard-record-label">Plus d'attaque</span>
+                <strong>#${maxAttack.id} ${name}</strong>
+                <span class="dashboard-record-stat">${maxAttack.base?.Attack ?? '?'} ATK</span>
+              </div>
+            </a>
+          `;
+        }
+        if (maxHp && maxHp.id !== maxAttack?.id) {
+          const name = maxHp.name?.french || maxHp.name?.english || maxHp.id;
+          recordsHtml += `
+            <a href="./pokemon.html?id=${maxHp.id}" class="dashboard-record-card">
+              <img src="${pokemonImageUrl(maxHp)}" alt="${name}">
+              <div>
+                <span class="dashboard-record-label">Plus de HP</span>
+                <strong>#${maxHp.id} ${name}</strong>
+                <span class="dashboard-record-stat">${maxHp.base?.HP ?? '?'} HP</span>
+              </div>
+            </a>
+          `;
+        } else if (maxHp && maxHp.id === maxAttack?.id) {
+          const name = maxHp.name?.french || maxHp.name?.english || maxHp.id;
+          recordsHtml += `
+            <a href="./pokemon.html?id=${maxHp.id}" class="dashboard-record-card">
+              <img src="${pokemonImageUrl(maxHp)}" alt="${name}">
+              <div>
+                <span class="dashboard-record-label">Plus de HP</span>
+                <strong>#${maxHp.id} ${name}</strong>
+                <span class="dashboard-record-stat">${maxHp.base?.HP ?? '?'} HP</span>
+              </div>
+            </a>
+          `;
+        }
+        recordsEl.innerHTML = recordsHtml || '<p class="text-muted">Aucun record</p>';
+        recordsEl.classList.remove('loading');
+
+        // Top types (barres)
+        const topTypes = countByType.slice(0, 8);
+        const maxCount = topTypes[0]?.count || 1;
+        typesEl.innerHTML = topTypes.length ? `
+          <ul class="dashboard-types-list">
+            ${topTypes.map(t => `
+              <li>
+                <span class="dashboard-type-name">${t.type}</span>
+                <div class="dashboard-type-bar-wrap">
+                  <div class="dashboard-type-bar" style="width: ${(t.count / maxCount) * 100}%"></div>
+                </div>
+                <span class="dashboard-type-count">${t.count}</span>
+              </li>
+            `).join('')}
+          </ul>
+        ` : '<p class="text-muted">Aucune donnée</p>';
+        typesEl.classList.remove('loading');
+
+      } catch (e) {
+        kpisEl.innerHTML = '<div class="kpi-card error-msg">Erreur de chargement</div>';
+        recordsEl.innerHTML = '<p class="error-msg">' + (e.error || 'Erreur') + '</p>';
+        typesEl.innerHTML = '<p class="error-msg">' + (e.error || 'Erreur') + '</p>';
+      }
+    }
+
+    loadDashboard();
+  </script>
 </body>
 </html>

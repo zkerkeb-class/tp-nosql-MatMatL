@@ -6,6 +6,8 @@ const router = express.Router();
 // GET /api/stats — statistiques avancées (agrégation MongoDB, Partie 6.B)
 router.get('/', async (req, res) => {
   try {
+    const total = await Pokemon.countDocuments({});
+
     // Nombre de Pokémon par type ($unwind pour un type par ligne, puis $group)
     const countByType = await Pokemon.aggregate([
       { $unwind: '$type' },
@@ -37,6 +39,7 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({
+      total,
       countByType,
       avgHpByType,
       maxAttack: maxAttackResult || null,
