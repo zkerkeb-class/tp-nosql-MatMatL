@@ -1,5 +1,6 @@
 import express from 'express';
 import Pokemon from '../models/pokemon.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -59,8 +60,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/pokemons -> créer un Pokémon (CREATE)
-router.post('/', async (req, res) => {
+// POST /api/pokemons -> créer un Pokémon (CREATE) — auth requise
+router.post('/', auth, async (req, res) => {
   try {
     const pokemon = await Pokemon.create(req.body);
     res.status(201).json(pokemon);
@@ -70,8 +71,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/pokemons/:id -> mettre à jour un Pokémon (UPDATE)
-router.put('/:id', async (req, res) => {
+// PUT /api/pokemons/:id -> mettre à jour un Pokémon (UPDATE) — auth requise
+router.put('/:id', auth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
 
@@ -90,8 +91,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/pokemons/:id -> supprimer un Pokémon (DELETE)
-router.delete('/:id', async (req, res) => {
+// DELETE /api/pokemons/:id -> supprimer un Pokémon (DELETE) — auth requise
+router.delete('/:id', auth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
 

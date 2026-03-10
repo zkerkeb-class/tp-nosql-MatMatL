@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 
 import pokemonsRouter from './routes/pokemons.js';
+import authRouter from './routes/auth.js';
 import connectDB from './db/connect.js';
 
 
@@ -17,7 +18,10 @@ app.use('/assets', express.static('assets')); // Permet d'accéder aux fichiers 
 
 app.use(express.json());
 
-// Routes Pokémon (Partie 1)
+// Routes auth (Partie 5)
+app.use('/api/auth', authRouter);
+
+// Routes Pokémon
 app.use('/api/pokemons', pokemonsRouter);
 
 
